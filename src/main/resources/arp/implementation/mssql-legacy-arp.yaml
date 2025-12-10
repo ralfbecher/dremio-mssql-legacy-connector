@@ -1,0 +1,110 @@
+metadata:
+  name: MSSQL_LEGACY
+  apiname: mssql-legacy
+  spec_version: "1"
+
+syntax:
+  identifier_quote: '"'
+  identifier_casing: unquoted_lower
+  identifier_resolution: case_insensitive
+
+data_types:
+  mappings:
+    - source:
+        name: INT
+      target:
+        name: INTEGER
+        dremio_type: INTEGER
+    - source:
+        name: BIGINT
+      target:
+        name: BIGINT
+        dremio_type: BIGINT
+    - source:
+        name: SMALLINT
+      target:
+        name: SMALLINT
+        dremio_type: SMALLINT
+    - source:
+        name: TINYINT
+      target:
+        name: TINYINT
+        dremio_type: TINYINT
+    - source:
+        name: BIT
+      target:
+        name: BIT
+        dremio_type: BOOLEAN
+    - source:
+        name: VARCHAR
+      target:
+        name: VARCHAR
+        dremio_type: VARCHAR
+    - source:
+        name: NVARCHAR
+      target:
+        name: NVARCHAR
+        dremio_type: VARCHAR
+    - source:
+        name: DATETIME
+      target:
+        name: DATETIME
+        dremio_type: TIMESTAMP
+
+relational_algebra:
+  aggregation:
+    enabled: true
+    functions:
+      - name: COUNT
+        signatures:
+          - args: []
+            return: BIGINT
+  project:
+    enabled: true
+  join:
+    enabled: true
+  sort:
+    enabled: true
+  union:
+    enabled: true
+  union_all:
+    enabled: true
+  except:
+    enabled: false
+  values:
+    enabled: false
+
+expressions:
+  operators:
+    - name: EQUAL
+      signatures:
+        - args: [ANY, ANY]
+          return: BOOLEAN
+    - name: NOT_EQUAL
+      signatures:
+        - args: [ANY, ANY]
+          return: BOOLEAN
+    - name: GREATER_THAN
+      signatures:
+        - args: [ANY, ANY]
+          return: BOOLEAN
+    - name: LESS_THAN
+      signatures:
+        - args: [ANY, ANY]
+          return: BOOLEAN
+    - name: AND
+      signatures:
+        - args: [BOOLEAN, BOOLEAN]
+          return: BOOLEAN
+    - name: OR
+      signatures:
+        - args: [BOOLEAN, BOOLEAN]
+          return: BOOLEAN
+    - name: IS_NULL
+      signatures:
+        - args: [ANY]
+          return: BOOLEAN
+    - name: IS_NOT_NULL
+      signatures:
+        - args: [ANY]
+          return: BOOLEAN
