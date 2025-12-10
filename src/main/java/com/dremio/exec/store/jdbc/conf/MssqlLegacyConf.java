@@ -32,17 +32,13 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
       AbstractArpConf.loadArpFile(ARP_FILENAME, (MssqlLegacyDialect::new));
 
   /**
-   * Choose ONE of these driver classes, depending on which JAR
-   * you actually put into /opt/dremio/jars/3rdparty:
+   * jTDS driver is used by default as it works much better with legacy
+   * SQL Servers that only support TLSv1 or have other compatibility issues.
    *
-   * 1) Microsoft JDBC 6.4:
-   *    DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-   *
-   * 2) jTDS (good for very old SQL Server):
-   *    DRIVER = "net.sourceforge.jtds.jdbc.Driver";
+   * Make sure to put jtds-1.3.1.jar (or similar) in /opt/dremio/jars/3rdparty/
+   * Download from: https://sourceforge.net/projects/jtds/files/jtds/
    */
-  private static final String DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-  // private static final String DRIVER = "net.sourceforge.jtds.jdbc.Driver";
+  private static final String DRIVER = "net.sourceforge.jtds.jdbc.Driver";
 
   // ===== UI fields =====
 
@@ -92,51 +88,32 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
       JdbcPluginConfig.Builder configBuilder,
       CredentialsService credentialsService,
       OptionManager optionManager) {
-    // Build JDBC URL depending on driver choice
-    String url;
-
-    if (DRIVER.equals("com.microsoft.sqlserver.jdbc.SQLServerDriver")) {
-      // Microsoft legacy driver
-      // Note: for very old servers you may want to allow TLSv1 here:
-      // ;encrypt=true;trustServerCertificate=true;sslProtocol=TLSv1
-      StringBuilder sb = new StringBuilder();
-      sb.append("jdbc:sqlserver://").append(host).append(":").append(port).append(";");
-      if (database != null && !database.isEmpty()) {
-        sb.append("databaseName=").append(database).append(";");
-      }
-      if (useSsl) {
-        sb.append("encrypt=true;trustServerCertificate=true;");
-        // sb.append("sslProtocol=TLSv1;"); // uncomment if your driver supports it
-      } else {
-        sb.append("encrypt=false;");
-      }
-      if (extraParams != null && !extraParams.isEmpty()) {
-        sb.append(extraParams);
-      }
-      url = sb.toString();
-    } else {
-      // jTDS URL style
-      StringBuilder sb = new StringBuilder();
-      sb.append("jdbc:jtds:sqlserver://").append(host).append(":").append(port);
-      if (database != null && !database.isEmpty()) {
-        sb.append("/").append(database);
-      }
-      if (useSsl) {
-        // jTDS SSL flag
-        sb.append(";ssl=require");
-      }
-      if (extraParams != null && !extraParams.isEmpty()) {
-        sb.append(";").append(extraParams);
-      }
-      url = sb.toString();
+    // Build jTDS JDBC URL
+    // Format: jdbc:jtds:sqlserver://host:port/database;property=value
+    StringBuilder sb = new StringBuilder();
+    sb.append("jdbc:jtds:sqlserver://").append(host).append(":").append(port);
+    if (database != null && !database.isEmpty()) {
+      sb.append("/").append(database);
     }
+    if (useSsl) {
+      // jTDS SSL - use 'ssl=require' for TLSv1 compatible connections
+      sb.append(";ssl=require");
+    }
+    if (extraParams != null && !extraParams.isEmpty()) {
+      // Ensure params start with semicolon
+      if (!extraParams.startsWith(";")) {
+        sb.append(";");
+      }
+      sb.append(extraParams);
+    }
+    String url = sb.toString();
 
     return configBuilder
         .withDialect(getDialect())
         .withDatasourceFactory(() -> DataSources.newGenericConnectionPoolDataSource(
             DRIVER, url, username, password, null,
             DataSources.CommitMode.DRIVER_SPECIFIED_COMMIT_MODE, 8, 60000L))
-        .clearHiddenSchemas() // optional, depends on your DB
+        .clearHiddenSchemas()
         .build();
   }
 
