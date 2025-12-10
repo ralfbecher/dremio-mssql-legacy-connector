@@ -4,6 +4,7 @@ import com.dremio.exec.catalog.conf.SourceType;
 import com.dremio.exec.catalog.conf.DisplayMetadata;
 import com.dremio.exec.catalog.conf.Secret;
 import com.dremio.exec.store.jdbc.dialect.arp.ArpDialect;
+import com.dremio.exec.store.jdbc.dialect.MssqlLegacyDialect;
 import com.dremio.exec.store.jdbc.JdbcPluginConfig;
 import com.dremio.exec.store.jdbc.DataSources;
 import com.dremio.services.credentials.CredentialsService;
@@ -26,9 +27,9 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
 
   private static final String ARP_FILENAME = "arp/implementation/mssql-legacy-arp.yaml";
 
-  // Dialect loaded from ARP YAML
-  private static final ArpDialect ARP_DIALECT =
-      AbstractArpConf.loadArpFile(ARP_FILENAME, (ArpDialect::new));
+  // Dialect loaded from ARP YAML - using custom MssqlLegacyDialect for SQL Server-specific handling
+  private static final MssqlLegacyDialect ARP_DIALECT =
+      AbstractArpConf.loadArpFile(ARP_FILENAME, (MssqlLegacyDialect::new));
 
   /**
    * Choose ONE of these driver classes, depending on which JAR
@@ -81,7 +82,7 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
 
   @Override
   @JsonIgnore
-  public ArpDialect getDialect() {
+  public MssqlLegacyDialect getDialect() {
     return ARP_DIALECT;
   }
 
