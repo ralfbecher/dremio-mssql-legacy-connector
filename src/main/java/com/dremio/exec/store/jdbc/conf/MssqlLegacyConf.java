@@ -21,7 +21,7 @@ import io.protostuff.Tag;
  * This is an ARP-based connector designed to work with old SQL Server
  * versions using a legacy JDBC driver (e.g. Microsoft 6.4 or jTDS).
  */
-@SourceType(value = "MSSQL_LEGACY", label = "MSSQL Legacy")
+@SourceType(value = "MSSQL_LEGACY", label = "MSSQL Legacy", uiConfig = "MSSQL-layout.json", externalQuerySupported = true)
 public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
 
   private static final String ARP_FILENAME = "arp/implementation/mssql-legacy-arp.yaml";
