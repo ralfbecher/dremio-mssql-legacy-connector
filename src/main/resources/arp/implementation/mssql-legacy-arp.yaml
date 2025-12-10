@@ -1,110 +1,305 @@
 metadata:
   name: MSSQL_LEGACY
   apiname: mssql-legacy
-  spec_version: "1"
+  spec_version: '1'
 
 syntax:
   identifier_quote: '"'
-  identifier_casing: unquoted_lower
-  identifier_resolution: case_insensitive
+  identifier_length_limit: 128
+  allows_boolean_literal: false
+  map_boolean_literal_to_bit: true
+  supports_catalogs: true
+  supports_schemas: true
 
 data_types:
   mappings:
     - source:
-        name: INT
-      target:
-        name: INTEGER
-        dremio_type: INTEGER
+        name: "INT"
+      dremio:
+        name: "integer"
+        required_cast_arguments: "none"
     - source:
-        name: BIGINT
-      target:
-        name: BIGINT
-        dremio_type: BIGINT
+        name: "BIGINT"
+      dremio:
+        name: "bigint"
+        required_cast_arguments: "none"
     - source:
-        name: SMALLINT
-      target:
-        name: SMALLINT
-        dremio_type: SMALLINT
+        name: "SMALLINT"
+      dremio:
+        name: "integer"
+        required_cast_arguments: "none"
     - source:
-        name: TINYINT
-      target:
-        name: TINYINT
-        dremio_type: TINYINT
+        name: "TINYINT"
+      dremio:
+        name: "integer"
+        required_cast_arguments: "none"
     - source:
-        name: BIT
-      target:
-        name: BIT
-        dremio_type: BOOLEAN
+        name: "BIT"
+      dremio:
+        name: "boolean"
+        required_cast_arguments: "none"
     - source:
-        name: VARCHAR
-      target:
-        name: VARCHAR
-        dremio_type: VARCHAR
+        name: "FLOAT"
+      dremio:
+        name: "double"
+        required_cast_arguments: "none"
     - source:
-        name: NVARCHAR
-      target:
-        name: NVARCHAR
-        dremio_type: VARCHAR
+        name: "REAL"
+      dremio:
+        name: "float"
+        required_cast_arguments: "none"
     - source:
-        name: DATETIME
-      target:
-        name: DATETIME
-        dremio_type: TIMESTAMP
+        name: "DECIMAL"
+      dremio:
+        name: "decimal"
+        required_cast_arguments: "precision_scale"
+    - source:
+        name: "NUMERIC"
+      dremio:
+        name: "decimal"
+        required_cast_arguments: "precision_scale"
+    - source:
+        name: "MONEY"
+      dremio:
+        name: "decimal"
+        required_cast_arguments: "precision_scale"
+    - source:
+        name: "SMALLMONEY"
+      dremio:
+        name: "decimal"
+        required_cast_arguments: "precision_scale"
+    - source:
+        name: "VARCHAR"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "CHAR"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "NVARCHAR"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "NCHAR"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "TEXT"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "NTEXT"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "DATE"
+      dremio:
+        name: "date"
+        required_cast_arguments: "none"
+    - source:
+        name: "TIME"
+      dremio:
+        name: "time"
+        required_cast_arguments: "none"
+    - source:
+        name: "DATETIME"
+      dremio:
+        name: "timestamp"
+        required_cast_arguments: "none"
+    - source:
+        name: "DATETIME2"
+      dremio:
+        name: "timestamp"
+        required_cast_arguments: "none"
+    - source:
+        name: "SMALLDATETIME"
+      dremio:
+        name: "timestamp"
+        required_cast_arguments: "none"
+    - source:
+        name: "UNIQUEIDENTIFIER"
+      dremio:
+        name: "varchar"
+        required_cast_arguments: "none"
+    - source:
+        name: "VARBINARY"
+      dremio:
+        name: "varbinary"
+        required_cast_arguments: "none"
+    - source:
+        name: "BINARY"
+      dremio:
+        name: "varbinary"
+        required_cast_arguments: "none"
 
 relational_algebra:
   aggregation:
-    enabled: true
+    enable: true
+    group_by_ordinal: false
+    distinct: true
+    count_functions:
+      count_star:
+        enable: true
+      count:
+        enable: true
+      count_distinct:
+        enable: true
     functions:
-      - name: COUNT
+      - names:
+          - "avg"
         signatures:
-          - args: []
-            return: BIGINT
-  project:
-    enabled: true
-  join:
-    enabled: true
-  sort:
-    enabled: true
-  union:
-    enabled: true
-  union_all:
-    enabled: true
+          - args:
+              - "integer"
+            return: "double"
+          - args:
+              - "double"
+            return: "double"
+          - args:
+              - "decimal"
+            return: "decimal"
+      - names:
+          - "max"
+          - "min"
+        signatures:
+          - args:
+              - "integer"
+            return: "integer"
+          - args:
+              - "bigint"
+            return: "bigint"
+          - args:
+              - "double"
+            return: "double"
+          - args:
+              - "varchar"
+            return: "varchar"
+          - args:
+              - "date"
+            return: "date"
+          - args:
+              - "timestamp"
+            return: "timestamp"
+          - args:
+              - "time"
+            return: "time"
+      - names:
+          - "sum"
+        signatures:
+          - args:
+              - "integer"
+            return: "bigint"
+          - args:
+              - "bigint"
+            return: "bigint"
+          - args:
+              - "double"
+            return: "double"
+          - args:
+              - "decimal"
+            return: "decimal"
+
   except:
-    enabled: false
+    enable: false
+  project:
+    enable: true
+  join:
+    enable: true
+    cross:
+      enable: true
+    inner:
+      enable: true
+      inequality: true
+    left:
+      enable: true
+      inequality: true
+    right:
+      enable: false
+    full:
+      enable: false
+  sort:
+    enable: true
+    order_by:
+      enable: true
+      default_nulls_ordering: high
+    fetch_offset:
+      offset_fetch:
+        enable: true
+        format: 'OFFSET {0} ROWS FETCH NEXT {1} ROWS ONLY'
+      offset_only:
+        enable: false
+      fetch_only:
+        enable: true
+        format: 'TOP {0}'
+  union:
+    enable: true
+  union_all:
+    enable: true
   values:
-    enabled: false
+    enable: false
+    method: values
 
 expressions:
+  subqueries:
+    correlated: true
+    scalar: true
+    in_clause: true
+  supports_case: true
+  supports_over: false
   operators:
-    - name: EQUAL
+    - names:
+        - "="
+        - "!="
+        - "<>"
+        - ">"
+        - ">="
+        - "<"
+        - "<="
       signatures:
-        - args: [ANY, ANY]
-          return: BOOLEAN
-    - name: NOT_EQUAL
+        - args:
+            - "double"
+            - "double"
+          return: "boolean"
+        - args:
+            - "double"
+            - "integer"
+          return: "boolean"
+        - args:
+            - "double"
+            - "varchar"
+          return: "boolean"
+        - args:
+            - "integer"
+            - "double"
+          return: "boolean"
+        - args:
+            - "integer"
+            - "integer"
+          return: "boolean"
+        - args:
+            - "integer"
+            - "varchar"
+          return: "boolean"
+        - args:
+            - "varchar"
+            - "varchar"
+          return: "boolean"
+    - names:
+        - "not"
       signatures:
-        - args: [ANY, ANY]
-          return: BOOLEAN
-    - name: GREATER_THAN
-      signatures:
-        - args: [ANY, ANY]
-          return: BOOLEAN
-    - name: LESS_THAN
-      signatures:
-        - args: [ANY, ANY]
-          return: BOOLEAN
-    - name: AND
-      signatures:
-        - args: [BOOLEAN, BOOLEAN]
-          return: BOOLEAN
-    - name: OR
-      signatures:
-        - args: [BOOLEAN, BOOLEAN]
-          return: BOOLEAN
-    - name: IS_NULL
-      signatures:
-        - args: [ANY]
-          return: BOOLEAN
-    - name: IS_NOT_NULL
-      signatures:
-        - args: [ANY]
-          return: BOOLEAN
+        - args:
+            - "boolean"
+          return: "boolean"
+  variable_length_operators:
+    - names:
+        - "and"
+        - "or"
+      variable_signatures:
+        - return: "boolean"
+          arg_type: "boolean"
