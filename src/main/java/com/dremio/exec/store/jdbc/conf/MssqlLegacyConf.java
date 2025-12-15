@@ -6,13 +6,16 @@ import com.dremio.exec.catalog.conf.Secret;
 import com.dremio.exec.store.jdbc.dialect.arp.ArpDialect;
 import com.dremio.exec.store.jdbc.dialect.MssqlLegacyDialect;
 import com.dremio.exec.store.jdbc.JdbcPluginConfig;
-import com.dremio.exec.store.jdbc.DataSources;
+import com.dremio.exec.store.jdbc.CloseableDataSource;
 import com.dremio.services.credentials.CredentialsService;
 import com.dremio.options.OptionManager;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import javax.sql.DataSource;
 import javax.validation.constraints.NotBlank;
+
+import org.apache.commons.dbcp2.BasicDataSource;
 
 import io.protostuff.Tag;
 
@@ -20,7 +23,7 @@ import io.protostuff.Tag;
  * Configuration for MSSQL Legacy sources.
  *
  * This is an ARP-based connector designed to work with old SQL Server
- * versions using a legacy JDBC driver (e.g. Microsoft 6.4 or jTDS).
+ * versions using the Microsoft JDBC 6.4 driver.
  */
 @SourceType(value = "MSSQL_LEGACY", label = "MSSQL Legacy", uiConfig = "MSSQL-layout.json", externalQuerySupported = true)
 public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
@@ -32,13 +35,12 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
       AbstractArpConf.loadArpFile(ARP_FILENAME, (MssqlLegacyDialect::new));
 
   /**
-   * jTDS driver is used by default as it works much better with legacy
-   * SQL Servers that only support TLSv1 or have other compatibility issues.
+   * Microsoft JDBC Driver 6.4 for SQL Server.
    *
-   * Make sure to put jtds-1.3.1.jar (or similar) in /opt/dremio/jars/3rdparty/
-   * Download from: https://sourceforge.net/projects/jtds/files/jtds/
+   * Make sure to put mssql-jdbc-6.4.0.jre8.jar in /opt/dremio/jars/3rdparty/
+   * Download from: https://docs.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server
    */
-  private static final String DRIVER = "net.sourceforge.jtds.jdbc.Driver";
+  private static final String DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
 
   // ===== UI fields =====
 
@@ -88,16 +90,15 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
       JdbcPluginConfig.Builder configBuilder,
       CredentialsService credentialsService,
       OptionManager optionManager) {
-    // Build jTDS JDBC URL
-    // Format: jdbc:jtds:sqlserver://host:port/database;property=value
+    // Build Microsoft JDBC URL
+    // Format: jdbc:sqlserver://host:port;databaseName=database;property=value
     StringBuilder sb = new StringBuilder();
-    sb.append("jdbc:jtds:sqlserver://").append(host).append(":").append(port);
+    sb.append("jdbc:sqlserver://").append(host).append(":").append(port);
     if (database != null && !database.isEmpty()) {
-      sb.append("/").append(database);
+      sb.append(";databaseName=").append(database);
     }
     if (useSsl) {
-      // jTDS SSL - use 'ssl=require' for TLSv1 compatible connections
-      sb.append(";ssl=require");
+      sb.append(";encrypt=true;trustServerCertificate=true");
     }
     if (extraParams != null && !extraParams.isEmpty()) {
       // Ensure params start with semicolon
@@ -110,11 +111,33 @@ public class MssqlLegacyConf extends AbstractArpConf<MssqlLegacyConf> {
 
     return configBuilder
         .withDialect(getDialect())
-        .withDatasourceFactory(() -> DataSources.newGenericConnectionPoolDataSource(
-            DRIVER, url, username, password, null,
-            DataSources.CommitMode.DRIVER_SPECIFIED_COMMIT_MODE, 8, 60000L))
+        .withDatasourceFactory(() -> createDataSource(url))
         .clearHiddenSchemas()
         .build();
+  }
+
+  /**
+   * Creates a DBCP2 DataSource with connection pooling.
+   */
+  private CloseableDataSource createDataSource(String url) {
+    BasicDataSource ds = new BasicDataSource();
+    ds.setDriverClassName(DRIVER);
+    ds.setUrl(url);
+    ds.setUsername(username);
+    ds.setPassword(password);
+
+    // Connection validation
+    ds.setValidationQuery("SELECT 1");
+    ds.setTestOnBorrow(true);
+    ds.setValidationQueryTimeout(30);
+
+    // Connection pool settings
+    ds.setMaxTotal(8);
+    ds.setMaxIdle(8);
+    ds.setMinIdle(0);
+    ds.setMaxWaitMillis(60000L);
+
+    return CloseableDataSource.wrap(ds);
   }
 
 }
